@@ -56,8 +56,19 @@ Upload an audio file, select a segment, and the system will:
 - 🧱 **Fully local**
   - No external APIs
   - Uses **Ollama** (with `mistral`) for all LLM calls and embeddings
+ 
+
+ Contributions
+
+This project is primarily educational, but contributions, ideas, and improvements are welcome.
+Feel free to open issues or pull requests to:
+	•	add new genres to the KB (kb/*.md)
+	•	extend the RAG logic
+	•	integrate automatic MIDI export
+	•	improve the UI/UX
 
 ---
+
 
 ## 🗂 Project Structure
 

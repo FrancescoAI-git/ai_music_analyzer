@@ -1,0 +1,12 @@
+{
+  "name": "ai-analyzer-ui",
+  "version": "1.0.0",
+  "description": "Interfaccia web per AI Music Analyzer con spettro in tempo reale",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

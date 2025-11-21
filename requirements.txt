@@ -1,0 +1,10 @@
+streamlit>=1.33.0
+librosa>=0.10.1
+soundfile>=0.12.1
+numpy>=1.26.0
+matplotlib>=3.7.0
+plotly>=5.18.0
+chromadb>=0.4.22
+ollama>=0.1.8
+scipy>=1.11.4
+pydub>=0.25.1

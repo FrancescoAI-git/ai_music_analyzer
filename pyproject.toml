@@ -1,0 +1,44 @@
+[project]
+name = "ai-music-analyzer"
+version = "0.1.0"
+description = "Analyzer audio con RAG + multi-agent pipeline e GUI Streamlit"
+authors = [
+    {name = "Francesco Martinelli"}
+]
+readme = "README.md"
+license = "MIT"
+
+requires-python = ">=3.10"
+
+# Dipendenze principali
+dependencies = [
+    "numpy",
+    "librosa",
+    "soundfile",
+    "pyloudnorm",
+    "chromadb",
+    "ollama",
+    "streamlit",
+    "scikit-learn",
+    "joblib",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["tests", "docs", "examples"]
+
+# Configurazione per strumenti esterni
+[tool.black]
+line-length = 88
+target-version = ['py311']
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.mypy]
+ignore_missing_imports = true
+strict = false

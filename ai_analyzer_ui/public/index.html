@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <!-- Charset UTF-8 per supportare caratteri italiani -->
+    <meta charset="UTF-8" />
+    <!-- Viewport per una corretta visualizzazione su mobile -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Titolo della pagina -->
+    <title>AI Music Analyzer – Visual UI</title>
+    <!-- Collega il file CSS per lo stile -->
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Contenitore principale dell'interfaccia -->
+    <div class="app-container">
+      <!-- Titolo dell'app -->
+      <h1 class="app-title">AI Music Analyzer – Visual UI</h1>
+
+      <!-- Box principale con i controlli -->
+      <div class="panel">
+        <!-- Sezione per il caricamento del file audio -->
+        <div class="section">
+          <label class="section-title">1. Carica una traccia audio (MP3/WAV)</label>
+          <input
+            id="audioFileInput"
+            type="file"
+            accept="audio/*"
+            class="file-input"
+          />
+        </div>
+
+        <!-- Sezione dei controlli di trasporto (play/pausa) e slider principale -->
+        <div class="section">
+          <label class="section-title">2. Controlli di riproduzione</label>
+
+          <div class="controls-row">
+            <!-- Pulsante Play/Pausa -->
+            <button id="playPauseBtn" class="btn" disabled>
+              ▶ Play
+            </button>
+
+            <!-- Etichetta tempo attuale / durata -->
+            <div class="time-labels">
+              <span id="currentTimeLabel">0:00</span>
+              <span>/</span>
+              <span id="durationLabel">0:00</span>
+            </div>
+          </div>
+
+          <!-- Slider che rappresenta la posizione nella traccia -->
+          <input
+            id="positionSlider"
+            type="range"
+            min="0"
+            max="1"
+            step="0.001"
+            value="0"
+            class="slider"
+            disabled
+          />
+          <div class="slider-caption">
+            Trascina lo slider: lo spettro e l'audio saltano alla nuova posizione.
+          </div>
+        </div>
+
+        <!-- Sezione di taglio / selezione -->
+        <div class="section">
+          <label class="section-title">3. Taglio / selezione del segmento</label>
+
+          <!-- Riga slider inizio -->
+          <div class="trim-row">
+            <span class="trim-label">Inizio</span>
+            <input
+              id="trimStartSlider"
+              type="range"
+              min="0"
+              max="1"
+              step="0.001"
+              value="0"
+              class="slider"
+              disabled
+            />
+            <span id="trimStartLabel" class="trim-time">0:00</span>
+          </div>
+
+          <!-- Riga slider fine -->
+          <div class="trim-row">
+            <span class="trim-label">Fine</span>
+            <input
+              id="trimEndSlider"
+              type="range"
+              min="0"
+              max="1"
+              step="0.001"
+              value="0"
+              class="slider"
+              disabled
+            />
+            <span id="trimEndLabel" class="trim-time">0:00</span>
+          </div>
+
+          <!-- Opzione loop selezione -->
+          <label class="loop-label">
+            <input id="loopSelectionCheckbox" type="checkbox" />
+            Loop solo la selezione (inizio → fine)
+          </label>
+        </div>
+
+        <!-- Sezione per lo spettro audio -->
+        <div class="section">
+          <label class="section-title">4. Spettro in tempo reale</label>
+          <!-- Canvas su cui disegniamo lo spettro delle frequenze -->
+          <canvas id="spectrumCanvas" width="900" height="250"></canvas>
+          <div class="hint">
+            Lo spettro reagisce sia al playback sia ai salti di posizione con lo slider.
+          </div>
+        </div>
+
+        <!-- Sezione per l'analisi AI via backend -->
+        <div class="section">
+          <label class="section-title">5. Analisi AI (backend)</label>
+
+          <!-- Pulsante per inviare il file + selezione al backend -->
+          <button id="analyzeBtn" class="btn" disabled>
+            🔍 Analizza con AI
+          </button>
+
+          <!-- Box in cui mostriamo il risultato del backend -->
+          <pre id="analysisOutput" class="analysis-output">
+Carica una traccia, imposta la selezione e avvia l'analisi AI.
+          </pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Collega il file JavaScript con la logica dell'interfaccia -->
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,38 @@
+# --- Python base ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.log
+
+# --- Virtual env ---
+.venv/
+venv/
+env/
+.simple-env/
+simple-env/
+
+# --- Chroma DB (rigenerabile) ---
+chroma_db/
+
+# --- File audio pesanti (non versionare i tuoi wav/mp3) ---
+*.wav
+*.mp3
+*.aiff
+*.flac
+
+# Se vuoi tenere solo file di esempio piccoli, usa una cartella tipo examples_audio/
+# e rimuovi da qui le estensioni, oppure aggiungi eccezioni:
+# !examples_audio/*.wav
+
+# --- Config locali / segreti ---
+.env
+.env.*
+*.sqlite
+
+# --- Roba macOS / editor ---
+.DS_Store
+.idea/
+.vscode/
+Thumbs.db

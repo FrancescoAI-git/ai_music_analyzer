@@ -1,43 +1,32 @@
-# Implementation Plan - Tailwind CSS Upgrade
+# Fix Frontend Display and Parameter Mismatch
 
 ## Goal Description
-Upgrade the existing Vanilla CSS interface to use **Tailwind CSS** for styling and animations. This will allow for a more modern, maintainable, and "cool" design with built-in animations.
+The user reported that results are not displaying in the frontend. Investigation revealed two issues:
+1.  `backend_server.py` filters out the `context` field from the response, which the frontend expects to display in the "Technical Context" section.
+2.  `index.html` sends `start`/`end` parameters, but the backend expects `trim_start`/`trim_end`, causing audio selections to be ignored.
+
+This plan fixes both issues to ensure correct data flow and display.
 
 ## User Review Required
-- [ ] Confirm if a build step (running `npm run build:css`) is acceptable. (Assumed yes as it's standard for Tailwind).
+> [!NOTE]
+> No breaking changes. This is a bug fix.
 
 ## Proposed Changes
 
-### Configuration
-#### [NEW] [tailwind.config.js](file:///Users/francescomartinelli/ai_analyzer/ai_analyzer_ui/tailwind.config.js)
-- Configure content paths (`./public/**/*.{html,js}`).
-- Extend theme with the "Cyberpunk" colors (Dark backgrounds, Neon Indigo/Purple).
-- Add custom animations (keyframes for "breathing" glow, slide-ins).
+### Backend
+#### [MODIFY] [backend_server.py](file:///Users/francescomartinelli/ai_analyzer/backend_server.py)
+- Add `"context": results.get("context")` to the return dictionary in `analyze_endpoint`.
 
-#### [MODIFY] [package.json](file:///Users/francescomartinelli/ai_analyzer/ai_analyzer_ui/package.json)
-- Add `devDependencies`: `tailwindcss`.
-- Add `scripts`: `"build:css": "tailwindcss -i ./src/input.css -o ./public/style.css --watch"`.
-
-### Source Files
-#### [NEW] [src/input.css](file:///Users/francescomartinelli/ai_analyzer/ai_analyzer_ui/src/input.css)
-- Import Tailwind directives (`@tailwind base;`, etc.).
-- Add any custom base styles if needed.
-
-#### [MODIFY] [public/index.html](file:///Users/francescomartinelli/ai_analyzer/ai_analyzer_ui/public/index.html)
-- **Complete Rewrite of Classes**: Replace standard CSS classes with Tailwind utility classes.
-- **Layout**: Use Flexbox/Grid utilities.
-- **Styling**: Apply dark mode colors, glassmorphism (`backdrop-blur`, `bg-opacity`), and gradients using Tailwind.
-- **Animations**: Add `animate-fade-in`, `hover:scale-105`, and custom animations to elements.
-
-#### [DELETE] [public/style.css](file:///Users/francescomartinelli/ai_analyzer/ai_analyzer_ui/public/style.css)
-- This file will be **generated** by Tailwind. We will delete the manual one and replace it with the build output.
+### Frontend
+#### [MODIFY] [index.html](file:///Users/francescomartinelli/ai_analyzer/ai-music-analyzer_UI/index.html)
+- Update `FormData` appending to use `trim_start` instead of `start`.
+- Update `FormData` appending to use `trim_end` instead of `end`.
 
 ## Verification Plan
-### Automated Tests
-- None.
 
 ### Manual Verification
-1. Run `npm install`.
-2. Run `npm run build:css` (or keep it running).
-3. Start server `npm start`.
-4. Verify the UI looks even better and has animations.
+1.  **Upload Audio**: Upload an audio file to the UI.
+2.  **Select Region**: Select a specific region.
+3.  **Analyze**: Click "Analyze Segment".
+4.  **Verify Display**: Check that the "Technical Context" section (top right) is populated with text (not empty or "No data returned").
+5.  **Verify Selection**: Check backend logs or context data to ensure the analyzed duration matches the selection (e.g., "Durata: 10.0 secondi" instead of full track).

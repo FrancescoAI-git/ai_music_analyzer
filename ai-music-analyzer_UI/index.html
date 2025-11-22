@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Music Analyzer | Pro</title>
+    <meta name="description" content="Next-gen AI Music Analysis Interface">
+
+    <!-- GLOBAL ERROR HANDLER -->
+    <script>
+        window.onerror = function(msg, url, line, col, error) {
+            const errBox = document.getElementById('global-error-box');
+            if (errBox) {
+                errBox.classList.remove('hidden');
+                document.getElementById('global-error-text').innerText = msg;
+            }
+            console.error("Global Error:", msg, url, line, error);
+            return false;
+        };
+    </script>
+
+    <!-- 1. TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 2. GSAP (GreenSock Animation Platform) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+    <!-- 3. Wavesurfer.js & Regions Plugin (Using jsDelivr for better stability) -->
+    <script src="https://cdn.jsdelivr.net/npm/wavesurfer.js@7.7.3/dist/wavesurfer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/wavesurfer.js@7.7.3/dist/plugins/regions.min.js"></script>
+
+    <!-- 4. Markdown Parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gray: { 750: '#2d3748', 850: '#1f2937', 900: '#111827', 950: '#030712' },
+                        cyan: { 400: '#22d3ee', 500: '#06b6d4', 900: '#164e63' },
+                        fuchsia: { 500: '#d946ef', 600: '#c026d3', 900: '#701a75' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                    animation: {
+                        'blob': 'blob 7s infinite',
+                        'spin-slow': 'spin 3s linear infinite',
+                    },
+                    keyframes: {
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Base Styles */
+        body {
+            background-color: #030712; /* gray-950 */
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #111827; }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+
+        /* Markdown Typography */
+        .prose h1, .prose h2, .prose h3 { color: #e2e8f0; font-weight: 700; margin-top: 1em; margin-bottom: 0.5em; }
+        .prose p { color: #cbd5e1; margin-bottom: 0.75em; line-height: 1.6; }
+        .prose strong { color: #22d3ee; }
+        .prose ul { list-style-type: disc; padding-left: 1.2em; margin-bottom: 1em; color: #cbd5e1; }
+        .prose code { background: #1f2937; color: #d946ef; padding: 0.2em 0.4em; border-radius: 0.25em; font-family: 'Fira Code', monospace; font-size: 0.85em; }
+
+        /* Utilities */
+        .glass {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .glass-card {
+            background: rgba(31, 41, 55, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Loading Bars Animation */
+        .bar {
+            width: 6px;
+            background: linear-gradient(to top, #22d3ee, #d946ef);
+            border-radius: 999px;
+            animation: sound 1s infinite ease-in-out alternate;
+        }
+        .bar:nth-child(1) { height: 20px; animation-delay: 0.0s; }
+        .bar:nth-child(2) { height: 40px; animation-delay: 0.2s; }
+        .bar:nth-child(3) { height: 60px; animation-delay: 0.4s; }
+        .bar:nth-child(4) { height: 35px; animation-delay: 0.1s; }
+        .bar:nth-child(5) { height: 50px; animation-delay: 0.3s; }
+
+        @keyframes sound {
+            0% { transform: scaleY(0.5); opacity: 0.7; }
+            100% { transform: scaleY(1.2); opacity: 1; }
+        }
+    </style>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="antialiased min-h-screen flex flex-col relative selection:bg-fuchsia-500/30 selection:text-fuchsia-200">
+
+    <!-- FATAL ERROR OVERLAY -->
+    <div id="global-error-box" class="hidden fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-6">
+        <div class="bg-red-900/20 border border-red-500/50 p-8 rounded-xl max-w-lg text-center">
+            <h2 class="text-2xl font-bold text-red-400 mb-4">System Error</h2>
+            <p class="text-gray-300 mb-4">A script failed to load. This usually happens if:</p>
+            <ul class="text-left text-sm text-gray-400 list-disc pl-6 mb-6 space-y-2">
+                <li>You have an ad-blocker blocking CDNs.</li>
+                <li>You are offline or have a firewall issue.</li>
+                <li>There is a temporary issue with jsDelivr/Cloudflare.</li>
+            </ul>
+            <p id="global-error-text" class="font-mono text-xs bg-black/50 p-4 rounded text-red-300 overflow-auto">Unknown Error</p>
+            <button onclick="window.location.reload()" class="mt-6 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">Reload Page</button>
+        </div>
+    </div>
+
+    <!-- Background Blobs -->
+    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob"></div>
+        <div class="absolute top-0 right-1/4 w-96 h-96 bg-fuchsia-600/10 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+        <div class="absolute -bottom-32 left-1/3 w-96 h-96 bg-purple-600/10 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="fixed w-full z-50 glass border-b-0 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.reload()">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-fuchsia-500 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.5)] group">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                    </svg>
+                </div>
+                <span class="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Music<span class="font-light">Analyzer</span></span>
+            </div>
+            <a href="https://github.com/FrancescoAI-git/ai_music_analyzer" target="_blank" 
+               class="text-gray-400 hover:text-white transition-colors flex items-center gap-2 text-sm font-medium group">
+                <span class="hidden sm:inline group-hover:translate-x-1 transition-transform">GitHub</span>
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" /></svg>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content Wrapper -->
+    <main class="flex-grow flex flex-col items-center justify-center relative z-10 w-full max-w-7xl mx-auto px-4 pt-20 pb-12">
+
+        <!-- SECTION: HERO & UPLOAD -->
+        <div id="hero-section" class="w-full flex flex-col items-center justify-center min-h-[80vh] transition-all duration-700">
+            
+            <div class="text-center mb-10 space-y-4 hero-anim">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-800/50 border border-gray-700 text-cyan-400 text-xs font-bold uppercase tracking-widest mb-2 shadow-[0_0_20px_rgba(34,211,238,0.2)]">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                    AI-Powered Audio Analysis
+                </div>
+                <h1 class="text-5xl sm:text-7xl font-extrabold tracking-tight text-white">
+                    Deconstruct <br>
+                    <span class="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-fuchsia-500">Your Sound</span>
+                </h1>
+                <p class="text-gray-400 max-w-2xl mx-auto text-lg sm:text-xl leading-relaxed">
+                    Upload your track. Select a segment. Let our multi-agent AI break down the genre, mix, theory, and creative direction.
+                </p>
+            </div>
+
+            <!-- Drop Zone -->
+            <div id="drop-zone" class="hero-anim group relative w-full max-w-2xl cursor-pointer">
+                <!-- Glowing Border Effect -->
+                <div class="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-fuchsia-600 rounded-2xl opacity-30 group-hover:opacity-100 blur transition duration-500 group-hover:duration-200"></div>
+                
+                <div class="relative w-full bg-gray-900 rounded-2xl border border-gray-800 p-12 flex flex-col items-center justify-center text-center transition-transform duration-300 group-hover:scale-[1.01] group-hover:bg-gray-900/90 overflow-hidden">
+                    
+                    <input type="file" id="file-input" accept=".wav,.mp3,.aiff,.flac" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20">
+                    
+                    <!-- Icon -->
+                    <div class="w-20 h-20 mb-6 rounded-full bg-gray-800/50 flex items-center justify-center group-hover:bg-gray-700 transition-colors relative z-10">
+                        <svg class="w-10 h-10 text-gray-400 group-hover:text-white transition-colors duration-300 transform group-hover:-translate-y-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                    </div>
+                    
+                    <h3 class="text-2xl font-bold text-white mb-2 relative z-10">Upload Audio File</h3>
+                    <p class="text-gray-500 text-sm relative z-10">Drag & drop or click to browse <br> <span class="text-gray-600 text-xs uppercase tracking-wider mt-2 inline-block font-mono">WAV · MP3 · FLAC · AIFF</span></p>
+
+                    <!-- Grid Background Pattern inside dropzone -->
+                    <div class="absolute inset-0 opacity-[0.03] z-0" style="background-image: radial-gradient(#ffffff 1px, transparent 1px); background-size: 24px 24px;"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- SECTION: WORKBENCH (Waveform & Controls) -->
+        <div id="workbench" class="hidden w-full max-w-6xl mx-auto flex flex-col gap-6">
+            
+            <!-- Header / Toolbar -->
+            <div class="flex justify-between items-end wb-anim opacity-0 translate-y-4">
+                <div>
+                    <h2 class="text-white font-bold text-2xl flex items-center gap-2">
+                        <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>
+                        Waveform Analysis
+                    </h2>
+                    <p class="text-gray-500 text-sm font-mono mt-1" id="track-name">track_title.wav</p>
+                </div>
+                <button id="btn-change-file" class="text-xs font-medium text-gray-400 hover:text-white flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-800/50 hover:bg-gray-700 transition-colors">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    New File
+                </button>
+            </div>
+
+            <!-- Player Card -->
+            <div class="relative rounded-2xl glass-card overflow-hidden shadow-2xl shadow-black/50 wb-anim opacity-0 translate-y-4 border-t border-white/10">
+                
+                <!-- Zoom Controls Overlay -->
+                <div class="absolute top-4 right-4 z-20 flex gap-1 bg-gray-900/80 backdrop-blur rounded-lg p-1 border border-white/5 shadow-lg">
+                    <button id="btn-zoom-out" class="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded transition-colors" title="Zoom Out">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
+                    </button>
+                    <div class="w-px bg-white/10 my-1"></div>
+                    <button id="btn-zoom-in" class="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded transition-colors" title="Zoom In">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    </button>
+                </div>
+
+                <!-- Waveform Container -->
+                <div class="relative bg-[#0a0f1d] h-64 w-full group" id="waveform-container">
+                    <!-- Glow behind waveform -->
+                    <div class="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none"></div>
+                    
+                    <div id="waveform" class="w-full h-full z-10 opacity-0 transition-opacity duration-700"></div>
+
+                    <!-- Loading Overlay for Waveform -->
+                    <div id="wave-loader" class="absolute inset-0 z-30 bg-gray-950 flex flex-col items-center justify-center">
+                         <div class="flex items-center gap-1 h-10">
+                            <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                        </div>
+                        <span class="text-xs text-gray-500 mt-4 font-mono tracking-widest animate-pulse">RENDERING WAVEFORM</span>
+                    </div>
+                </div>
+
+                <!-- Controls Bar -->
+                <div class="bg-gray-900/60 backdrop-blur border-t border-white/5 p-6 flex flex-col lg:flex-row items-center justify-between gap-6 relative z-20">
+                    
+                    <!-- Play/Time -->
+                    <div class="flex items-center gap-5 w-full lg:w-auto">
+                        <button id="btn-play" class="group relative w-14 h-14 flex items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-cyan-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-cyan-400/50 transition-all duration-300 hover:scale-105 active:scale-95">
+                            <svg class="w-6 h-6 ml-1 fill-current group-hover:text-white" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        </button>
+                        <div>
+                            <div class="text-2xl font-mono font-bold text-white tracking-tight tabular-nums" id="time-display">00:00.00</div>
+                            <div class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Current Position</div>
+                        </div>
+                    </div>
+
+                    <!-- Selection Info -->
+                    <div class="flex items-center gap-0.5 bg-gray-950/50 rounded-xl p-1 border border-white/5">
+                         <div class="px-4 py-2 text-center border-r border-white/5">
+                             <div class="text-[10px] text-gray-500 uppercase font-bold">Start</div>
+                             <div class="font-mono text-sm text-cyan-300 tabular-nums" id="sel-start">0.00</div>
+                         </div>
+                         <div class="px-4 py-2 text-center">
+                             <div class="text-[10px] text-gray-500 uppercase font-bold">End</div>
+                             <div class="font-mono text-sm text-cyan-300 tabular-nums" id="sel-end">0.00</div>
+                         </div>
+                         <div class="px-4 py-2 text-center bg-white/5 rounded-lg ml-1">
+                             <div class="text-[10px] text-fuchsia-400 uppercase font-bold">Duration</div>
+                             <div class="font-mono text-sm text-white tabular-nums" id="sel-dur">0.00s</div>
+                         </div>
+                    </div>
+
+                    <!-- Analyze Button -->
+                    <button id="btn-analyze" class="w-full lg:w-auto relative overflow-hidden px-8 py-3.5 bg-white text-gray-900 font-bold rounded-xl transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed group">
+                        <span class="relative z-10 flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                            Analyze Segment
+                        </span>
+                        <!-- Hover Gradient Sweep -->
+                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out z-0"></div>
+                    </button>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: LOADING STATE -->
+        <div id="loading-section" class="hidden w-full h-64 flex flex-col items-center justify-center gap-6 fade-in">
+            <div class="relative w-24 h-24 flex items-center justify-center">
+                <!-- Outer Ring -->
+                <div class="absolute inset-0 rounded-full border-2 border-gray-800"></div>
+                <div class="absolute inset-0 rounded-full border-t-2 border-cyan-500 animate-spin"></div>
+                <!-- Inner Pulse -->
+                <div class="absolute inset-4 bg-gray-800 rounded-full animate-pulse flex items-center justify-center">
+                    <svg class="w-8 h-8 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
+            </div>
+            <div class="text-center space-y-2">
+                <h3 class="text-xl font-bold text-white">Analyzing Audio</h3>
+                <p class="text-gray-400 text-sm font-mono" id="loading-text">Initializing AI agents...</p>
+            </div>
+        </div>
+
+        <!-- SECTION: RESULTS -->
+        <div id="results-section" class="hidden w-full max-w-6xl mx-auto flex flex-col gap-8 pb-20">
+            
+            <!-- Error Message -->
+            <div id="error-msg" class="hidden p-4 bg-red-500/10 border border-red-500/20 text-red-200 rounded-xl flex flex-col gap-2">
+                 <div class="flex items-center gap-3 font-bold text-red-400">
+                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                     <span id="error-title">Analysis failed</span>
+                 </div>
+                 <p class="text-sm opacity-80 ml-8" id="error-details">Check if the backend is running at localhost:8000</p>
+            </div>
+
+            <!-- Top Row: Genre & Context -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Genre Card -->
+                <div class="result-card md:col-span-1 glass-card rounded-2xl p-8 relative overflow-hidden group hover:border-cyan-500/30 transition-colors">
+                    <div class="absolute -right-6 -top-6 w-32 h-32 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-full blur-2xl group-hover:opacity-100 transition-opacity"></div>
+                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Estimated Genre</h4>
+                    <div id="res-genre" class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-white break-words leading-tight">
+                        --
+                    </div>
+                </div>
+
+                <!-- Context Card -->
+                <div class="result-card md:col-span-2 glass-card rounded-2xl p-8 relative overflow-hidden hover:border-cyan-500/30 transition-colors">
+                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Technical Context</h4>
+                    <div id="res-context" class="prose prose-invert prose-sm max-w-none text-gray-300">
+                        --
+                    </div>
+                </div>
+            </div>
+
+            <!-- Middle Row: Agents (Accordion Style) -->
+            <div class="flex flex-col gap-4">
+                <h3 class="text-lg font-bold text-white opacity-80 px-1 result-card">Agent Insights</h3>
+                
+                <!-- Mix Agent -->
+                <div class="result-card glass-card rounded-xl border border-white/5 overflow-hidden transition-colors hover:border-blue-500/30">
+                    <button class="accordion-btn w-full px-6 py-4 flex items-center justify-between bg-gray-900/40 hover:bg-gray-800/40 transition-colors text-left">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-blue-900/50 text-blue-400 flex items-center justify-center border border-blue-500/20">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                            </div>
+                            <span class="font-bold text-gray-200">Mix Engineer Agent</span>
+                        </div>
+                        <svg class="w-5 h-5 text-gray-500 transform transition-transform duration-300 accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div class="accordion-content h-0 overflow-hidden">
+                        <div class="p-6 pt-2 prose prose-invert prose-sm max-w-none text-gray-300 border-t border-white/5 bg-gray-900/20">
+                            <div id="res-mix">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Theory Agent -->
+                <div class="result-card glass-card rounded-xl border border-white/5 overflow-hidden transition-colors hover:border-fuchsia-500/30">
+                    <button class="accordion-btn w-full px-6 py-4 flex items-center justify-between bg-gray-900/40 hover:bg-gray-800/40 transition-colors text-left">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-fuchsia-900/50 text-fuchsia-400 flex items-center justify-center border border-fuchsia-500/20">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>
+                            </div>
+                            <span class="font-bold text-gray-200">Music Theory Agent</span>
+                        </div>
+                        <svg class="w-5 h-5 text-gray-500 transform transition-transform duration-300 accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div class="accordion-content h-0 overflow-hidden">
+                        <div class="p-6 pt-2 prose prose-invert prose-sm max-w-none text-gray-300 border-t border-white/5 bg-gray-900/20">
+                            <div id="res-theory">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Creative Agent -->
+                <div class="result-card glass-card rounded-xl border border-white/5 overflow-hidden transition-colors hover:border-yellow-500/30">
+                    <button class="accordion-btn w-full px-6 py-4 flex items-center justify-between bg-gray-900/40 hover:bg-gray-800/40 transition-colors text-left">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-yellow-900/50 text-yellow-400 flex items-center justify-center border border-yellow-500/20">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            </div>
+                            <span class="font-bold text-gray-200">Creative Producer Agent</span>
+                        </div>
+                        <svg class="w-5 h-5 text-gray-500 transform transition-transform duration-300 accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div class="accordion-content h-0 overflow-hidden">
+                        <div class="p-6 pt-2 prose prose-invert prose-sm max-w-none text-gray-300 border-t border-white/5 bg-gray-900/20">
+                            <div id="res-creative">--</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Final Plan -->
+            <div class="result-card glass-card rounded-2xl overflow-hidden shadow-[0_0_30px_rgba(34,211,238,0.05)] border border-cyan-500/20">
+                <div class="px-8 py-5 bg-gray-900/50 border-b border-white/5 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                         <div class="p-2 bg-cyan-500/10 rounded-lg text-cyan-400">
+                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                         </div>
+                         <h3 class="text-xl font-bold text-white">Orchestrated Plan</h3>
+                    </div>
+                    <span class="text-[10px] font-bold bg-cyan-500 text-gray-900 px-2 py-0.5 rounded uppercase tracking-wider">Final Output</span>
+                </div>
+                <div class="p-8 bg-[#0B101A]">
+                    <div id="res-plan" class="prose prose-invert prose-lg max-w-none">
+                        --
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- SCRIPT -->
+    <script>
+        // --- APP STATE & VARIABLES ---
+        let wavesurfer;
+        let wsRegions;
+        let audioFile = null;
+        let currentRegion = null;
+        
+        const DOM = {
+            hero: document.getElementById('hero-section'),
+            dropZone: document.getElementById('drop-zone'),
+            fileInput: document.getElementById('file-input'),
+            workbench: document.getElementById('workbench'),
+            loading: document.getElementById('loading-section'),
+            results: document.getElementById('results-section'),
+            errorMsg: document.getElementById('error-msg'),
+            errorTitle: document.getElementById('error-title'),
+            errorDetails: document.getElementById('error-details'),
+            
+            // Workbench
+            trackName: document.getElementById('track-name'),
+            waveContainer: document.getElementById('waveform-container'),
+            waveLoader: document.getElementById('wave-loader'),
+            btnPlay: document.getElementById('btn-play'),
+            btnAnalyze: document.getElementById('btn-analyze'),
+            btnChangeFile: document.getElementById('btn-change-file'),
+            btnZoomIn: document.getElementById('btn-zoom-in'),
+            btnZoomOut: document.getElementById('btn-zoom-out'),
+            timeDisplay: document.getElementById('time-display'),
+            elStart: document.getElementById('sel-start'),
+            elEnd: document.getElementById('sel-end'),
+            elDur: document.getElementById('sel-dur'),
+            
+            // Results
+            resGenre: document.getElementById('res-genre'),
+            resContext: document.getElementById('res-context'),
+            resMix: document.getElementById('res-mix'),
+            resTheory: document.getElementById('res-theory'),
+            resCreative: document.getElementById('res-creative'),
+            resPlan: document.getElementById('res-plan')
+        };
+
+        // --- INITIALIZATION & GSAP ---
+        
+        window.onload = function() {
+            // Check libraries
+            if (typeof gsap === 'undefined') console.warn('GSAP failed to load');
+            if (typeof WaveSurfer === 'undefined') {
+                console.error('WaveSurfer failed to load');
+                alert("Critical Error: WaveSurfer library failed to load. Please refresh.");
+                return;
+            }
+
+            // 1. Initial Hero Animation
+            if (typeof gsap !== 'undefined') {
+                const tl = gsap.timeline();
+                tl.from("#navbar", { y: -50, opacity: 0, duration: 0.8, ease: "power3.out" })
+                  .from(".hero-anim", { y: 30, opacity: 0, stagger: 0.15, duration: 1, ease: "power3.out" }, "-=0.5");
+            }
+
+            // 2. Init WaveSurfer (Hidden initially, will be rendered when file loads)
+            initWaveSurfer();
+            
+            // 3. UI Event Bindings
+            setupUIEvents();
+        };
+
+        function initWaveSurfer() {
+             try {
+                wavesurfer = WaveSurfer.create({
+                    container: '#waveform',
+                    waveColor: 'rgba(34, 211, 238, 0.4)',   // Cyan-400, low opacity
+                    progressColor: 'rgb(217, 70, 239)',     // Fuchsia-500
+                    cursorColor: '#fff',
+                    barWidth: 2,
+                    barGap: 3,
+                    barRadius: 3,
+                    height: 256, // h-64
+                    normalize: true,
+                    backend: 'WebAudio',
+                    // Zoom/Scroll Config
+                    minPxPerSec: 50,
+                    autoScroll: true,
+                    autoCenter: true,
+                    fillParent: true,
+                    hideScrollbar: false
+                });
+
+                // Regions Plugin
+                // Defensive check for Regions plugin presence
+                if (window.WaveSurfer && window.WaveSurfer.Regions) {
+                    wsRegions = wavesurfer.registerPlugin(window.WaveSurfer.Regions.create());
+                } else {
+                    console.warn("WaveSurfer.Regions plugin not loaded. Selection will not work.");
+                }
+
+                // WaveSurfer Events
+                wavesurfer.on('ready', () => {
+                    // Fade out loader, fade in wave
+                    DOM.waveLoader.style.opacity = 0; 
+                    setTimeout(() => DOM.waveLoader.classList.add('hidden'), 500);
+                    
+                    if(typeof gsap !== 'undefined') {
+                        gsap.to("#waveform", { opacity: 1, duration: 0.5 });
+                    } else {
+                        document.getElementById("waveform").style.opacity = 1;
+                    }
+                    
+                    // Add default region
+                    const dur = wavesurfer.getDuration();
+                    DOM.timeDisplay.innerText = formatTime(0);
+                    
+                    if(wsRegions) {
+                        wsRegions.clearRegions();
+                        let start = 0;
+                        let end = dur > 30 ? 30 : dur; 
+                        
+                        const region = wsRegions.addRegion({
+                            start: start,
+                            end: end,
+                            content: 'Analysis Zone',
+                            color: 'rgba(6, 182, 212, 0.1)', // Cyan tint
+                            drag: true,
+                            resize: true,
+                            minLength: 1
+                        });
+                        
+                        updateRegionUI(region);
+                        currentRegion = region;
+                    }
+                });
+
+                if(wsRegions) {
+                    wsRegions.on('region-updated', (region) => {
+                        updateRegionUI(region);
+                        currentRegion = region;
+                    });
+                    
+                    wsRegions.on('region-clicked', (region, e) => {
+                        e.stopPropagation();
+                        region.play();
+                    });
+                }
+
+                // Playback Events
+                wavesurfer.on('play', () => updatePlayBtn(true));
+                wavesurfer.on('pause', () => updatePlayBtn(false));
+                wavesurfer.on('finish', () => updatePlayBtn(false));
+                wavesurfer.on('audioprocess', () => {
+                    DOM.timeDisplay.innerText = formatTime(wavesurfer.getCurrentTime());
+                });
+
+                // Smooth Scroll/Zoom on Wheel
+                DOM.waveContainer.addEventListener('wheel', (e) => {
+                    if(!wavesurfer) return;
+                    if(Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; 
+                    e.preventDefault();
+                    
+                    const zoomFactor = 1.1;
+                    // Use options.minPxPerSec safely
+                    const currentMinPx = wavesurfer.options.minPxPerSec || 50;
+                    let newMinPx = e.deltaY < 0 ? currentMinPx * zoomFactor : currentMinPx / zoomFactor;
+                    newMinPx = Math.max(10, Math.min(newMinPx, 1000));
+                    
+                    wavesurfer.zoom(newMinPx);
+                }, { passive: false });
+
+             } catch (err) {
+                 console.error("Error in initWaveSurfer:", err);
+             }
+        }
+
+        function setupUIEvents() {
+            // File Input
+            DOM.fileInput.addEventListener('change', (e) => {
+                if(e.target.files.length) loadFile(e.target.files[0]);
+            });
+            
+            // Drag & Drop visual feedback
+            DOM.dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                DOM.dropZone.classList.add('scale-105');
+            });
+            DOM.dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                DOM.dropZone.classList.remove('scale-105');
+            });
+            DOM.dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                DOM.dropZone.classList.remove('scale-105');
+                if(e.dataTransfer.files.length) loadFile(e.dataTransfer.files[0]);
+            });
+
+            // Play Button
+            DOM.btnPlay.addEventListener('click', () => wavesurfer.playPause());
+
+            // Zoom Buttons
+            DOM.btnZoomIn.addEventListener('click', () => {
+                 const cur = wavesurfer.options.minPxPerSec || 50;
+                 wavesurfer.zoom(Math.min(1000, cur * 1.5));
+            });
+            DOM.btnZoomOut.addEventListener('click', () => {
+                const cur = wavesurfer.options.minPxPerSec || 50;
+                wavesurfer.zoom(Math.max(10, cur / 1.5));
+            });
+
+            // Change File
+            DOM.btnChangeFile.addEventListener('click', resetApp);
+
+            // Analyze Button
+            DOM.btnAnalyze.addEventListener('click', runAnalysis);
+
+            // Accordion Logic
+            document.querySelectorAll('.accordion-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const content = btn.nextElementSibling;
+                    const icon = btn.querySelector('.accordion-icon');
+                    
+                    // Check if currently open
+                    const isOpen = content.style.height !== '0px' && content.style.height !== '';
+                    
+                    if (isOpen) {
+                        // Close
+                        if(typeof gsap !== 'undefined') {
+                            gsap.to(content, { height: 0, duration: 0.3, ease: "power2.inOut" });
+                            gsap.to(icon, { rotation: 0, duration: 0.3 });
+                        } else {
+                            content.style.height = 0;
+                        }
+                    } else {
+                        // Open
+                        if(typeof gsap !== 'undefined') {
+                            gsap.set(content, { height: "auto" });
+                            gsap.from(content, { height: 0, duration: 0.3, ease: "power2.inOut" });
+                            gsap.to(icon, { rotation: 180, duration: 0.3 });
+                        } else {
+                            content.style.height = 'auto';
+                        }
+                    }
+                });
+            });
+        }
+
+        // --- CORE FUNCTIONS ---
+
+        function loadFile(file) {
+            if(!file) return;
+            const validTypes = ['audio/wav', 'audio/mpeg', 'audio/aiff', 'audio/flac', 'audio/x-aiff', 'audio/x-flac'];
+            const ext = file.name.split('.').pop().toLowerCase();
+            
+            // Basic check
+            if(!validTypes.includes(file.type) && !['wav','mp3','aiff','flac'].includes(ext)) {
+                alert('Please upload a valid audio file (WAV, MP3, AIFF, FLAC).');
+                return;
+            }
+
+            audioFile = file;
+            DOM.trackName.innerText = file.name;
+
+            // Animation: Switch Hero -> Workbench
+            const switchToWorkbench = () => {
+                DOM.hero.classList.add('hidden');
+                DOM.workbench.classList.remove('hidden');
+                
+                // Stagger Reveal Workbench
+                if(typeof gsap !== 'undefined') {
+                    gsap.to(".wb-anim", { opacity: 1, y: 0, stagger: 0.15, duration: 0.8, ease: "power3.out" });
+                } else {
+                    document.querySelectorAll(".wb-anim").forEach(el => el.style.opacity = 1);
+                }
+                
+                // Init Wave Loader
+                DOM.waveLoader.classList.remove('hidden');
+                DOM.waveLoader.style.opacity = 1;
+                
+                // Load Audio
+                try {
+                    wavesurfer.load(URL.createObjectURL(file));
+                } catch(e) {
+                    console.error("WaveSurfer Load Error:", e);
+                    alert("Failed to load audio file. Please try again.");
+                    resetApp();
+                }
+            };
+
+            if(typeof gsap !== 'undefined') {
+                gsap.to(DOM.hero, { opacity: 0, y: -50, duration: 0.5, onComplete: switchToWorkbench });
+            } else {
+                DOM.hero.style.display = 'none';
+                switchToWorkbench();
+            }
+        }
+
+        function resetApp() {
+            wavesurfer.stop();
+            audioFile = null;
+            
+            // Reverse Animation: Workbench -> Hero
+            const switchToHero = () => {
+                 DOM.workbench.classList.add('hidden');
+                DOM.workbench.style.opacity = 1; // Reset for next time
+                DOM.hero.classList.remove('hidden');
+                DOM.results.classList.add('hidden');
+                DOM.loading.classList.add('hidden');
+                DOM.errorMsg.classList.add('hidden');
+                
+                if(typeof gsap !== 'undefined') {
+                    gsap.to(DOM.hero, { opacity: 1, y: 0, duration: 0.5 });
+                    gsap.to(".wb-anim", { opacity: 0, y: 20 }); // Reset wb positions
+                } else {
+                    DOM.hero.style.opacity = 1;
+                }
+            };
+
+            if(typeof gsap !== 'undefined') {
+                 gsap.to(DOM.workbench, { opacity: 0, duration: 0.3, onComplete: switchToHero });
+            } else {
+                switchToHero();
+            }
+            
+            DOM.fileInput.value = '';
+        }
+
+        async function runAnalysis() {
+            if(!audioFile) return;
+
+            // 1. UI State: Analyzing
+            DOM.btnAnalyze.disabled = true;
+            DOM.results.classList.add('hidden');
+            DOM.errorMsg.classList.add('hidden');
+            DOM.loading.classList.remove('hidden');
+            
+            // Scroll to loader if needed
+            DOM.loading.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // 2. Prepare Data
+            const start = currentRegion ? currentRegion.start : 0;
+            const end = currentRegion ? currentRegion.end : wavesurfer.getDuration();
+
+            const formData = new FormData();
+            formData.append('file', audioFile);
+            formData.append('start', start.toString());
+            formData.append('end', end.toString());
+
+            // 3. Cycle Loading Text
+            const texts = ["Analyzing spectrum...", "Isolating instruments...", "Running mix agents...", "Generating music theory context...", "Finalizing report..."];
+            let textIdx = 0;
+            const textInterval = setInterval(() => {
+                textIdx = (textIdx + 1) % texts.length;
+                document.getElementById('loading-text').innerText = texts[textIdx];
+            }, 2000);
+
+            // 4. API Call
+            try {
+                const response = await fetch('http://localhost:8000/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                clearInterval(textInterval);
+
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(`Server Error: ${response.status} - ${errText}`);
+                }
+
+                const data = await response.json();
+                
+                // 5. Render & Reveal
+                renderResults(data);
+                
+                DOM.loading.classList.add('hidden');
+                DOM.results.classList.remove('hidden');
+                
+                // Animate Results In
+                if(typeof gsap !== 'undefined') {
+                    gsap.fromTo(".result-card", 
+                        { y: 30, opacity: 0 },
+                        { y: 0, opacity: 1, stagger: 0.1, duration: 0.8, ease: "back.out(1.2)" }
+                    );
+                } else {
+                    document.querySelectorAll(".result-card").forEach(el => el.style.opacity = 1);
+                }
+
+                // Auto-scroll to results
+                setTimeout(() => {
+                    window.scrollTo({ top: DOM.results.offsetTop - 100, behavior: 'smooth' });
+                }, 100);
+
+            } catch (error) {
+                clearInterval(textInterval);
+                console.error(error);
+                DOM.loading.classList.add('hidden');
+                DOM.errorMsg.classList.remove('hidden');
+                
+                // Enhanced Error Info
+                if (error.message.includes("Failed to fetch") || error.message.includes("Load failed")) {
+                    DOM.errorTitle.innerText = "Connection Failed";
+                    DOM.errorDetails.innerHTML = `
+                        <strong>Possible Causes:</strong><br>
+                        1. Backend is not running on <code>localhost:8000</code><br>
+                        2. CORS is blocked (Backend must allow 'Access-Control-Allow-Origin: *')<br>
+                        3. You are opening this file as <code>file://</code> without a local server.
+                    `;
+                } else {
+                    DOM.errorTitle.innerText = "Analysis Error";
+                    DOM.errorDetails.innerText = error.message;
+                }
+            } finally {
+                DOM.btnAnalyze.disabled = false;
+            }
+        }
+
+        function renderResults(data) {
+            // Safe Markdown Parse logic
+            const safeMD = (content) => {
+                if (!content) return '<em>No data returned.</em>';
+                try {
+                    // Check for marked.parse or global marked
+                    if (typeof marked !== 'undefined') {
+                        if (typeof marked.parse === 'function') return marked.parse(content);
+                        if (typeof marked === 'function') return marked(content);
+                    }
+                    return content;
+                } catch(e) {
+                    console.warn('Markdown parsing failed', e);
+                    return content;
+                }
+            };
+            
+            DOM.resGenre.innerText = data.genre || 'Unknown';
+            DOM.resContext.innerHTML = safeMD(data.context);
+            DOM.resMix.innerHTML = safeMD(data.mix_agent);
+            DOM.resTheory.innerHTML = safeMD(data.theory_agent);
+            DOM.resCreative.innerHTML = safeMD(data.creative_agent);
+            DOM.resPlan.innerHTML = safeMD(data.final_plan);
+
+            // Reset accordions
+            document.querySelectorAll('.accordion-content').forEach(el => el.style.height = 0);
+            if(typeof gsap !== 'undefined') {
+                 document.querySelectorAll('.accordion-icon').forEach(el => gsap.to(el, {rotation: 0}));
+            }
+        }
+
+        // --- HELPERS ---
+
+        function updateRegionUI(region) {
+            DOM.elStart.innerText = formatTime(region.start);
+            DOM.elEnd.innerText = formatTime(region.end);
+            DOM.elDur.innerText = (region.end - region.start).toFixed(2) + 's';
+        }
+
+        function formatTime(s) {
+            const min = Math.floor(s / 60);
+            const sec = Math.floor(s % 60);
+            const ms = Math.floor((s % 1) * 100);
+            return `${min}:${sec.toString().padStart(2,'0')}.${ms.toString().padStart(2,'0')}`;
+        }
+
+        function updatePlayBtn(isPlaying) {
+            if(isPlaying) {
+                DOM.btnPlay.innerHTML = '<svg class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+            } else {
+                DOM.btnPlay.innerHTML = '<svg class="w-6 h-6 ml-1 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+            }
+        }
+
+    </script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>

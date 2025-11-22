@@ -1,6 +1,7 @@
 # 🎧 AI Music Analyzer
 
 > Multi-agent audio analysis with local LLMs, RAG, and a Streamlit UI.
+<img width="1099" height="652" alt="Screenshot 2025-11-22 alle 11 56 26" src="https://github.com/user-attachments/assets/c44331ac-8b1c-4c8a-8873-fb862218ade9" />
 
 **AI Music Analyzer** is an interactive tool that helps music producers analyze and improve their tracks using:
 
@@ -68,7 +69,6 @@ Feel free to open issues or pull requests to:
 	•	improve the UI/UX
 
 ---
-<img width="1099" height="652" alt="Screenshot 2025-11-22 alle 11 56 26" src="https://github.com/user-attachments/assets/c44331ac-8b1c-4c8a-8873-fb862218ade9" />
 
 
 

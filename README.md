@@ -68,7 +68,8 @@ Feel free to open issues or pull requests to:
 	•	improve the UI/UX
 
 ---
-<img width="1120" height="653" alt="Screenshot 2025-11-22 alle 11 50 05" src="https://github.com/user-attachments/assets/5a3a80e6-abf5-48f6-88f0-f049a0968d2e" />
+<img width="1099" height="652" alt="Screenshot 2025-11-22 alle 11 56 26" src="https://github.com/user-attachments/assets/c44331ac-8b1c-4c8a-8873-fb862218ade9" />
+
 
 
 ## 🗂 Project Structure

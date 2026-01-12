@@ -25,13 +25,11 @@ Windows:
     python build_kb.py
 
 6. Start the Backend Server (Python):
-
-	cd /Users/francescomartinelli/ai_analyzer
+	
 	uvicorn backend_server:app --reload --port 8000
 
 7. Start the UI Server (Node.js): First, build the CSS (if you made changes):
 
-	cd /Users/francescomartinelli/ai_analyzer/ai_analyzer_ui
 	npm run build:css
 
 Then start the server:

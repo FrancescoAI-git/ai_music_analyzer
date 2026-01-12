@@ -25,17 +25,11 @@ I have completely revamped the interface to be "figa e moderna" (cool and modern
 ## How to Run
 
 1. **Start the Backend Server** (Python):
-   ```bash
-   cd /Users/francescomartinelli/ai_analyzer
-   uvicorn backend_server:app --reload --port 8000
-   ```
+   
 
 2. **Start the UI Server** (Node.js):
    First, build the CSS (if you made changes):
-   ```bash
-   cd /Users/francescomartinelli/ai_analyzer/ai_analyzer_ui
-   npm run build:css
-   ```
+   
    Then start the server:
    ```bash
    npm start
